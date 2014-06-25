@@ -227,7 +227,4 @@ public class Dataset {
 		System.out.println(Arrays.toString(encode));
 	}
 
-	public double getMaxlable() {
-		return 10;
-	}
 }

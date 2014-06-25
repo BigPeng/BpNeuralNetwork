@@ -32,6 +32,9 @@ public class BPNetwork extends NeuralNetwork {
 	private final boolean autoEncodeOn = false;
 	private BPNetwork autoNetwork = null;
 	private static AtomicBoolean stopTrain = new AtomicBoolean(false);
+
+	private int maxLable = -1;
+	private List<String> lables;
 	// cnn的宽度
 	private static final int WIDTH = 10;
 
@@ -77,6 +80,10 @@ public class BPNetwork extends NeuralNetwork {
 
 	}
 
+	public void setMaxLable(int maxLable) {
+		this.maxLable = maxLable;
+	}
+
 	private void initLayer() {
 		for (int i = 0; i < layerSize.length; i++) {
 			NeuralLayer layer = new NeuralLayer(i, layerSize[i],
@@ -91,7 +98,7 @@ public class BPNetwork extends NeuralNetwork {
 	@Override
 	public void predict(Dataset testSet, String outName) {
 		try {
-			int max = (int) testSet.getMaxlable();
+			int max = maxLable;
 			boolean hasLable = testSet.getLableIndex() != -1 ? true : false;
 			PrintWriter out = new PrintWriter(new File(outName));
 			Iterator<Record> iter = testSet.iter();
@@ -126,7 +133,7 @@ public class BPNetwork extends NeuralNetwork {
 	public List<Integer> predict(Dataset testSet) {
 		try {
 			List<Integer> result = new ArrayList<Integer>();
-			int max = (int) testSet.getMaxlable();
+			int max = maxLable;
 			boolean hasLable = testSet.getLableIndex() != -1 ? true : false;
 			Iterator<Record> iter = testSet.iter();
 			int rightCount = 0;
@@ -154,7 +161,8 @@ public class BPNetwork extends NeuralNetwork {
 	}
 
 	/***
-	 * 根据数据,自编码进行特征提取,实质上是一个三层神经网络,输入层为原始数据, 输出层是对原始数据的拟合
+	 * 根据数据,自编码进行特征提取,实质上是一个三层神经网络,输入层为原始数据,
+	 * 输出层是对原始数据的拟合
 	 * 
 	 * 
 	 * @param dataSet
@@ -525,12 +533,17 @@ public class BPNetwork extends NeuralNetwork {
 					public void process(int start, int end) {
 						for (int j = start; j < end; j++) {
 							double tmp = 0;
-							// int iStart = (int) (j*ratio);
-							// int iEnd = (int) ((j+1)*ratio);
-							// if (iEnd> weights.length)
+							// int iStart = (int)
+							// (j*ratio);
+							// int iEnd = (int)
+							// ((j+1)*ratio);
+							// if (iEnd>
+							// weights.length)
 							// iEnd = weights .length;
-							// for (int i = iStart; i < iEnd; i++) {
-							// tmp += weights[i][j] * lastOutputs[i];
+							// for (int i = iStart; i <
+							// iEnd; i++) {
+							// tmp += weights[i][j] *
+							// lastOutputs[i];
 							// }
 							for (int i = 0; i < weights.length; i++) {
 								tmp += weights[i][j] * lastOutputs[i];
@@ -585,6 +598,8 @@ public class BPNetwork extends NeuralNetwork {
 		try {
 			BPNetwork bp = new BPNetwork();
 			String line = in.readLine();// 第一行表示有多少层
+			bp.maxLable = Integer.parseInt(line);
+			line = in.readLine();
 			bp.layerNum = Integer.parseInt(line);
 			bp.layerSize = Util.string2ints(in.readLine());
 			for (int i = 0; i < bp.layerNum; i++) {// 初始化每一层
@@ -616,8 +631,6 @@ public class BPNetwork extends NeuralNetwork {
 		}
 	}
 
-	
-
 	/**
 	 * 保存模型,只需要保存偏置和权重即可
 	 * 
@@ -626,6 +639,7 @@ public class BPNetwork extends NeuralNetwork {
 	public void saveModel(String fileName) {
 		try {
 			PrintWriter out = new PrintWriter(fileName);
+			out.write(maxLable + "\n");// 第一行是层数
 			out.write(layerNum + "\n");// 第一行是层数
 			out.write(Util.array2string(layerSize) + "\n");
 			for (int i = 0; i < layerNum; i++) {// 保存每一层
@@ -669,6 +683,21 @@ public class BPNetwork extends NeuralNetwork {
 
 		public abstract void process(int start, int end);
 
+	}
+
+	public void setLablesFile(String fileName) {
+		try {
+			lables = new ArrayList<String>();
+			BufferedReader reader = new BufferedReader(new FileReader(fileName));
+			String line = reader.readLine();
+			while (line != null) {
+				lables.add(line.trim());
+				line = reader.readLine();
+			}
+			reader.close();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
 	}
 
 }

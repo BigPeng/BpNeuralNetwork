@@ -132,8 +132,11 @@ public class HelpTest {
 	public static void testIdCarddDital(){
 		String fileName = "data/merge.shuffle";
 		Dataset dataset = Dataset.load(fileName, ",", 1024);
-		BPNetwork bp = new BPNetwork(new int[]{1024,100,4});	
+		BPNetwork bp = new BPNetwork(new int[]{1024,100,4});
+		bp.setMaxLable(10);
 		bp.trainModel(dataset,0.9999);
+		bp.setLablesFile("data/merge.index");
+	//	BPNetwork bp = BPNetwork.loadModel("model/model1438.model");
 		String testName = "data/idcard_digit.xiong.shuffle.all";
 		Dataset testset = Dataset.load(testName, ",", 1024);	
 		bp.test(testset);
