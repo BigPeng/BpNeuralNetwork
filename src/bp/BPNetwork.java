@@ -32,10 +32,8 @@ public class BPNetwork extends NeuralNetwork {
 	private final boolean autoEncodeOn = false;
 	private BPNetwork autoNetwork = null;
 	private static AtomicBoolean stopTrain = new AtomicBoolean(false);
-	// 模型在训练集上的最大类别号
-	private int maxLable;
-	// 模型在训练集上的类别
-	private List<String> lables;
+	// cnn的宽度
+	private static final int WIDTH = 10;
 
 	public BPNetwork(int[] layerSize) {
 		this.layerNum = layerSize.length;
@@ -54,9 +52,6 @@ public class BPNetwork extends NeuralNetwork {
 	 */
 	@Override
 	public void trainModel(Dataset trainSet, double threshold) {
-		//训练数据的时候设置好类别，以便测试集能在模型上得到类别
-		lables = trainSet.getLables();
-		maxLable = lables.size() - 1;
 		if (autoEncodeOn) {// 开启自编码
 			try {
 				int featureSize = 300;
@@ -96,9 +91,8 @@ public class BPNetwork extends NeuralNetwork {
 	@Override
 	public void predict(Dataset testSet, String outName) {
 		try {
-			int max = maxLable;
-			boolean hasLable = testSet.getLableColumnIndex() != -1 ? true
-					: false;
+			int max = (int) testSet.getMaxlable();
+			boolean hasLable = testSet.getLableIndex() != -1 ? true : false;
 			PrintWriter out = new PrintWriter(new File(outName));
 			Iterator<Record> iter = testSet.iter();
 			int rightCount = 0;
@@ -125,9 +119,42 @@ public class BPNetwork extends NeuralNetwork {
 		}
 	}
 
+	/**
+	 * 预测数据
+	 */
+
+	public List<Integer> predict(Dataset testSet) {
+		try {
+			List<Integer> result = new ArrayList<Integer>();
+			int max = (int) testSet.getMaxlable();
+			boolean hasLable = testSet.getLableIndex() != -1 ? true : false;
+			Iterator<Record> iter = testSet.iter();
+			int rightCount = 0;
+			while (iter.hasNext()) {
+				Record record = iter.next();
+				// 设置输入层的输出值为当前记录值
+				getLayer(0).setOutputs(record);
+				// 更新后面各层的输出值
+				updateOutput();
+				double[] output = getLayer(layerNum - 1).getOutputs();
+				int lable = Util.binaryArray2int(output);
+				if (lable > max)
+					lable = lable - (1 << (output.length - 1));
+				if (hasLable && isSame(output, record, false)) {
+					rightCount++;
+				}
+				result.add(lable);
+			}
+			Log.i("precision", "" + (rightCount * 1.0 / testSet.size()));
+			return result;
+		} catch (Exception e) {
+			e.printStackTrace();
+			return null;
+		}
+	}
+
 	/***
-	 * 根据数据,自编码进行特征提取,实质上是一个三层神经网络,输入层为原始数据,
-	 * 输出层是对原始数据的拟合
+	 * 根据数据,自编码进行特征提取,实质上是一个三层神经网络,输入层为原始数据, 输出层是对原始数据的拟合
 	 * 
 	 * 
 	 * @param dataSet
@@ -498,17 +525,12 @@ public class BPNetwork extends NeuralNetwork {
 					public void process(int start, int end) {
 						for (int j = start; j < end; j++) {
 							double tmp = 0;
-							// int iStart = (int)
-							// (j*ratio);
-							// int iEnd = (int)
-							// ((j+1)*ratio);
-							// if (iEnd>
-							// weights.length)
+							// int iStart = (int) (j*ratio);
+							// int iEnd = (int) ((j+1)*ratio);
+							// if (iEnd> weights.length)
 							// iEnd = weights .length;
-							// for (int i = iStart; i <
-							// iEnd; i++) {
-							// tmp += weights[i][j] *
-							// lastOutputs[i];
+							// for (int i = iStart; i < iEnd; i++) {
+							// tmp += weights[i][j] * lastOutputs[i];
 							// }
 							for (int i = 0; i < weights.length; i++) {
 								tmp += weights[i][j] * lastOutputs[i];
@@ -551,8 +573,17 @@ public class BPNetwork extends NeuralNetwork {
 
 	public static BPNetwork loadModel(String fileName) {
 		try {
+			return loadModel(new BufferedReader(new FileReader(fileName)));
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+		}
+		return null;
+
+	}
+
+	private static BPNetwork loadModel(BufferedReader in) {
+		try {
 			BPNetwork bp = new BPNetwork();
-			BufferedReader in = new BufferedReader(new FileReader(fileName));
 			String line = in.readLine();// 第一行表示有多少层
 			bp.layerNum = Integer.parseInt(line);
 			bp.layerSize = Util.string2ints(in.readLine());
@@ -584,6 +615,8 @@ public class BPNetwork extends NeuralNetwork {
 			return null;
 		}
 	}
+
+	
 
 	/**
 	 * 保存模型,只需要保存偏置和权重即可
@@ -619,10 +652,6 @@ public class BPNetwork extends NeuralNetwork {
 		} catch (FileNotFoundException e) {
 			e.printStackTrace();
 		}
-	}
-
-	public void finish() {
-		runner.stop();
 	}
 
 	private abstract class Task implements Runnable {

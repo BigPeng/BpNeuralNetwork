@@ -14,31 +14,35 @@ import java.util.Map;
 public class Dataset {
 	// 保存数据
 	private List<Record> records;
-	// 类别列号下标
-	private int lableColumnIndex;
-	// 类别,根据类别id找对应的类别
-	private List<String> lables;
-	// 类别map，方便查找类别对应的id
-	private Map<String, Integer> lablesMap;
-	private Integer lablesId;
+	// 类别下标
+	private int lableIndex;
+
+	private double maxLable = -1;
 
 	public Dataset(int classIndex) {
 
-		this.lableColumnIndex = classIndex;
+		this.lableIndex = classIndex;
 		records = new ArrayList<Record>();
-		if (lableColumnIndex != -1) {// 训练数据才有类别
-			lables = new ArrayList<String>();
-			lablesMap = new HashMap<String, Integer>();
-			lablesId = 0;
+	}
+
+	public Dataset(List<double[]> datas) {
+		this();
+		for (double[] data : datas) {
+			append(new Record(data));
 		}
+	}
+
+	private Dataset() {
+		this.lableIndex = -1;
+		records = new ArrayList<Record>();
 	}
 
 	public int size() {
 		return records.size();
 	}
 
-	public int getLableColumnIndex() {
-		return lableColumnIndex;
+	public int getLableIndex() {
+		return lableIndex;
 	}
 
 	public void append(Record record) {
@@ -60,8 +64,8 @@ public class Dataset {
 	 * @param lable
 	 *            记录的类标
 	 */
-	public void append(double[] attrs, String lable) {
-		records.add(new Record(attrs, lable2id(lable)));
+	public void append(double[] attrs, Double lable) {
+		records.add(new Record(attrs, lable));
 	}
 
 	public Iterator<Record> iter() {
@@ -79,8 +83,8 @@ public class Dataset {
 
 	}
 
-	public Integer getLable(int index) {
-		return records.get(index).getLableId();
+	public Double getLable(int index) {
+		return records.get(index).getLable();
 	}
 
 	/**
@@ -95,7 +99,8 @@ public class Dataset {
 	 * @return
 	 */
 	public static Dataset load(String filePath, String tag, int lableIndex) {
-		Dataset dataset = new Dataset(lableIndex);
+		Dataset dataset = new Dataset();
+		dataset.lableIndex = lableIndex;
 		File file = new File(filePath);
 		try {
 
@@ -105,22 +110,10 @@ public class Dataset {
 				String[] datas = line.split(tag);
 				if (datas.length == 0)
 					continue;
-				double[] data;
-				if (lableIndex != -1)
-					data = new double[datas.length - 1];
-				else
-					data = new double[datas.length];
-				int i;
-				for (i = 0; i < datas.length - 1; i++)
+				double[] data = new double[datas.length];
+				for (int i = 0; i < datas.length; i++)
 					data[i] = Double.parseDouble(datas[i]);
-				Record record;
-				if (lableIndex != -1) {// 训练数据，有类别
-					Integer lableId = dataset.lable2id(datas[i]);
-					record = dataset.new Record(data, lableId);
-				} else {
-					data[i] = Double.parseDouble(datas[i]);
-					record = dataset.new Record(data);
-				}
+				Record record = dataset.new Record(data);
 				dataset.append(record);
 			}
 			in.close();
@@ -134,24 +127,6 @@ public class Dataset {
 	}
 
 	/**
-	 * string类型的类别到id的转化
-	 * 
-	 * @param lable
-	 * @return
-	 */
-	private Integer lable2id(String lable) {
-		Integer lableId;
-		if (lablesMap.containsKey(lable))// 前面加入的记录已经有了该类标
-			lableId = lablesMap.get(lable);
-		else {// 新类标
-			lableId = lablesId++;
-			lablesMap.put(lable, lableId);
-			lables.add(lable);
-		}
-		return lableId;
-	}
-
-	/**
 	 * 数据记录(实例),记录由属性和类别组成,类别必须为第一列或者最后一列或者空
 	 * 
 	 * @author jiqunpeng
@@ -161,15 +136,25 @@ public class Dataset {
 	public class Record {
 		// 存储数据
 		private double[] attrs;
-		private Integer lableId;
+		private Double lable;
 
-		private Record(double[] attrs, Integer lableId) {
+		private Record(double[] attrs, Double lable) {
 			this.attrs = attrs;
-			this.lableId = lableId;
+			this.lable = lable;
 		}
 
 		public Record(double[] data) {
-			attrs = data;
+			if (lableIndex == -1)
+				attrs = data;
+			else {
+				lable = data[lableIndex];
+				if (lable > maxLable)
+					maxLable = lable;
+				if (lableIndex == 0)
+					attrs = Arrays.copyOfRange(data, 1, data.length);
+				else
+					attrs = Arrays.copyOfRange(data, 0, data.length - 1);
+			}
 		}
 
 		/**
@@ -186,30 +171,19 @@ public class Dataset {
 			sb.append("attrs:");
 			sb.append(Arrays.toString(attrs));
 			sb.append("lable:");
-			sb.append(lableId);
+			sb.append(lable);
 			return sb.toString();
 		}
 
 		/**
-		 * 获取该记录的类标的下标
+		 * 该记录的类标
 		 * 
 		 * @return
 		 */
-		public Integer getLableId() {
-			if (lableColumnIndex == -1)
+		public Double getLable() {
+			if (lableIndex == -1)
 				return null;
-			return lableId;
-		}
-
-		/**
-		 * 获取类别
-		 * 
-		 * @return
-		 */
-		public String getLable() {
-			if (lableColumnIndex == -1)
-				return null;
-			return lables.get(lableId);
+			return lable;
 		}
 
 		/**
@@ -219,7 +193,7 @@ public class Dataset {
 		 * @return
 		 */
 		public int[] getEncodeTarget(int n) {
-			String binary = Integer.toBinaryString(lableId.intValue());
+			String binary = Integer.toBinaryString(lable.intValue());
 			byte[] bytes = binary.getBytes();
 			int[] encode = new int[n];
 			int j = n;
@@ -230,7 +204,7 @@ public class Dataset {
 		}
 
 		public double[] getDoubleEncodeTarget(int n) {
-			String binary = Integer.toBinaryString(lableId.intValue());
+			String binary = Integer.toBinaryString(lable.intValue());
 			byte[] bytes = binary.getBytes();
 			double[] encode = new double[n];
 			int j = n;
@@ -243,23 +217,17 @@ public class Dataset {
 	}
 
 	public static void main(String[] args) {
-		Dataset d = new Dataset(10);
-
+		Dataset d = new Dataset();
+		d.lableIndex = 10;
 		Record r = d.new Record(new double[] { 3, 2, 2, 5, 4, 5, 3, 11, 3, 12,
 				1 });
 		int[] encode = r.getEncodeTarget(4);
 
-		System.out.println(r.lableId);
+		System.out.println(r.lable);
 		System.out.println(Arrays.toString(encode));
 	}
 
-	/**
-	 * 获取数据集的类别集合
-	 * 
-	 * @return
-	 */
-	public List<String> getLables() {
-		return lables;
+	public double getMaxlable() {
+		return 10;
 	}
-
 }
