@@ -19,13 +19,17 @@ public class Dataset {
 
 	private double maxLable = -1;
 
-	public Dataset(int classIndex) {
+	// 是否都输出值编码
+	private boolean encodeLable;
+
+	private Dataset(int classIndex) {
 
 		this.lableIndex = classIndex;
+		this.encodeLable = false;
 		records = new ArrayList<Record>();
 	}
 
-	public Dataset(List<double[]> datas) {
+	private Dataset(List<double[]> datas) {
 		this();
 		for (double[] data : datas) {
 			append(new Record(data));
@@ -98,14 +102,18 @@ public class Dataset {
 	 *            类标下标，从0开始
 	 * @return
 	 */
-	public static Dataset load(String filePath, String tag, int lableIndex) {
+	public static Dataset load(String filePath, String tag, int lableIndex,
+			boolean hasTitle) {
 		Dataset dataset = new Dataset();
+		// dataset.encodeLable = encodeLable;
 		dataset.lableIndex = lableIndex;
 		File file = new File(filePath);
 		try {
 
 			BufferedReader in = new BufferedReader(new FileReader(file));
 			String line;
+			if (hasTitle)
+				in.readLine();
 			while ((line = in.readLine()) != null) {
 				String[] datas = line.split(tag);
 				if (datas.length == 0)
@@ -203,7 +211,17 @@ public class Dataset {
 			return encode;
 		}
 
-		public double[] getDoubleEncodeTarget(int n) {
+		/**
+		 * 获取目标值
+		 * 
+		 * @param n
+		 * @param encodeLable
+		 *            是否对目标值进行编码
+		 * @return
+		 */
+		public double[] getTarget(int n, boolean encodeLable) {
+			if (!encodeLable)
+				return new double[] { lable };
 			String binary = Integer.toBinaryString(lable.intValue());
 			byte[] bytes = binary.getBytes();
 			double[] encode = new double[n];

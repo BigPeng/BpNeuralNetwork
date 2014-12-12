@@ -51,8 +51,8 @@ public class HelpTest {
 	}
 	public static void testBP(){
 		String fileName = "data/poker-hand-training-order.txt";
-		Dataset dataset = Dataset.load(fileName, ",", 10);
-		BPNetwork bp = new BPNetwork(new int[]{10,80,4});
+		Dataset dataset = Dataset.load(fileName, ",", 10,false);
+		BPNetwork bp = new BPNetwork(new int[]{10,80,4},true);
 		bp.trainModel(dataset,0.98);
 //		String testName = "data/poker-hand-test-order.nolable";
 //		Dataset testset = Dataset.load(testName, ",", -1);
@@ -60,7 +60,7 @@ public class HelpTest {
 //		bp.predict(testset,outName);
 		
 		String testName = "data/poker-hand-test-order.csv";
-		Dataset testset = Dataset.load(testName, ",", 10);
+		Dataset testset = Dataset.load(testName, ",", 10,false);
 		double p = bp.test(testset);
 		
 	}
@@ -68,24 +68,36 @@ public class HelpTest {
 	
 	public static void testHandWirte(){
 		String fileName = "data/train.format";
-		Dataset dataset = Dataset.load(fileName, ",", 784);
-		BPNetwork bp = new BPNetwork(new int[]{784,100,4});
+		Dataset dataset = Dataset.load(fileName, ",", 784,false);
+		BPNetwork bp = new BPNetwork(new int[]{784,100,4},true);
 		bp.trainModel(dataset,0.99);
 		dataset= null;
 		String testName = "data/test.format";
-		Dataset testset = Dataset.load(testName, ",", -1);
+		Dataset testset = Dataset.load(testName, ",", -1,false);
 		String outName = "data/test.predict";
 		bp.predict(testset,outName);
 	}
 	
+	public static void testPinan(){
+		String fileName = "data/train_second_stage.csv";
+		Dataset dataset = Dataset.load(fileName, ",", 688,true);
+		BPNetwork bp = new BPNetwork(new int[]{688,100,4},true);
+		bp.trainModel(dataset,0.99);
+//		dataset= null;
+//		String testName = "data/test.format";
+//		Dataset testset = Dataset.load(testName, ",", -1,false);
+//		String outName = "data/test.predict";
+//		bp.predict(testset,outName);
+	}
+	
 	public static void testAotuEncode(){
 		String fileName = "data/train-hw.split";
-		Dataset dataset = Dataset.load(fileName, ",", 784);
-		BPNetwork bp = new BPNetwork(new int[]{784,20,4});
+		Dataset dataset = Dataset.load(fileName, ",", 784,false);
+		BPNetwork bp = new BPNetwork(new int[]{784,20,4},true);
 		bp.trainModel(dataset,0.995);
 		dataset= null;
 		String testName = "data/test-hw.split";
-		Dataset testset = Dataset.load(testName, ",", 784);	
+		Dataset testset = Dataset.load(testName, ",", 784,false);	
 		bp.test(testset);
 	}
 	public static void testTest(){
@@ -100,7 +112,7 @@ public class HelpTest {
 		String modelName = "data/tiny.model";
 		BPNetwork bp = BPNetwork.loadModel(modelName);
 		String fileName = "data/tiny.txt";
-		Dataset dataset = Dataset.load(fileName, ",", 3);
+		Dataset dataset = Dataset.load(fileName, ",", 3,false);
 		bp.trainModel(dataset,0.98);
 		
 	}
@@ -109,8 +121,8 @@ public class HelpTest {
 	 */
 	public static void testWords(){
 		String fileName = "data/3500.db";
-		Dataset dataset = Dataset.load(fileName, ",", 1024);
-		BPNetwork bp = new BPNetwork(new int[]{1024,150,12});	
+		Dataset dataset = Dataset.load(fileName, ",", 1024,false);
+		BPNetwork bp = new BPNetwork(new int[]{1024,150,12},true);	
 		//BPNetwork bp = BPNetwork.loadModel("model/testWords.model");
 		bp.trainModel(dataset,0.85);
 //		String testName = "data/3510_make.txt";
@@ -130,19 +142,70 @@ public class HelpTest {
 	 * ²âÊÔ¿¨ºÅµÈÊý×Ö
 	 */
 	public static void testIdCarddDital(){
-		String fileName = "data/merge.shuffle";
-		Dataset dataset = Dataset.load(fileName, ",", 1024);
-		BPNetwork bp = new BPNetwork(new int[]{1024,100,4});
-		bp.setMaxLable(10);
-		bp.trainModel(dataset,0.9999);
-		bp.setLablesFile("data/merge.index");
+		String fileName = "data/625.merge.balance.shuffle";
+		Dataset dataset = Dataset.load(fileName, ",", 1024,false);
+		BPNetwork bp = new BPNetwork(new int[]{1024,100,4},true);
+		bp.setLables("data/idcard.index");
 	//	BPNetwork bp = BPNetwork.loadModel("model/model1438.model");
+		bp.trainModel(dataset,0.999);
+		
+		
 		String testName = "data/idcard_digit.xiong.shuffle.all";
-		Dataset testset = Dataset.load(testName, ",", 1024);	
-		bp.test(testset);
+		Dataset testset = Dataset.load(testName, ",", 1024,false);	
+		//bp.test(testset);
+		List<String> out = bp.predict(testset);
+		System.out.println(out);
 		bp.saveModel("model/model1438.model");
 		ConcurenceRunner.stop();
 	}
+	/**
+	 * ²âÊÔÐÔ±ð
+	 */
+	public static void testSex(){
+		String fileName = "data/625.sex.shuffle";
+		Dataset dataset = Dataset.load(fileName, ",", 1024,false);
+		BPNetwork bp = new BPNetwork(new int[]{1024,30,1},true);		
+		bp.setLables("data/index.sex");
+		//BPNetwork bp = BPNetwork.loadModel("model/model1438.model");
+		bp.trainModel(dataset,2);		
+		bp.saveModel("model/sex.model");
+		ConcurenceRunner.stop();
+	}
+	public static void testName(){
+		String fileName = "data/626.name";
+		Dataset dataset = Dataset.load(fileName, ",", 1024,false);
+		BPNetwork bp = new BPNetwork(new int[]{1024,6,6},true);		
+		bp.setLables("data/index.name");
+		//BPNetwork bp = BPNetwork.loadModel("model/model1438.model");
+		bp.trainModel(dataset,2);		
+		bp.saveModel("model/name.model");
+		ConcurenceRunner.stop();
+	}
+	
+	
+	public static void testAddr(){
+		String fileName = "data/626.addr.shuffle";
+		Dataset dataset = Dataset.load(fileName, ",", 1024,false);
+		BPNetwork bp = new BPNetwork(new int[]{1024,80,8},true);		
+		bp.setLables("data/index.addr");
+		//BPNetwork bp = BPNetwork.loadModel("model/model1438.model");
+		bp.trainModel(dataset,2);		
+		bp.saveModel("model/addr.model");
+		ConcurenceRunner.stop();
+	}
+	
+	public static void testLogFunc(){
+		String fileName = "data/func_train.txt";
+		Dataset dataset = Dataset.load(fileName, "\t", 2,false);
+		BPNetwork bp = new BPNetwork(new int[]{2,200,1},false);
+		bp.trainModel(dataset,1);
+		dataset= null;
+		String testName = "data/func_test.txt";
+		Dataset testset = Dataset.load(testName, "\t",2,false);
+		String outName = "data/zjw_test.predict";
+		bp.predict(testset,outName);
+	}
+	
 	public static void main(String[] args) {
 		// testArray();
 		// testArrayOrder();
@@ -154,7 +217,12 @@ public class HelpTest {
 		//testAotuEncode();
 		//testMove();
 		//testWords();
-		testIdCarddDital();
+		//testIdCarddDital();
+		//testSex();
+		//testName();
+		//testAddr();
+		//testPinan();
+		testLogFunc();
 	}
 
 }

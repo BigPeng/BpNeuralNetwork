@@ -73,6 +73,18 @@ public class Util<T> {
 			return null;
 		}
 	}
+	
+	public static List<String> line2list(String line) {
+		String[] lables = line.split(",");
+		for (int i = 0; i < lables.length; i++)
+			lables[i] = lables[i].trim();
+		return Arrays.asList(lables);
+	}
+	
+	public static String list2line(List<String> lables) {
+	    String line = Arrays.toString(lables.toArray());
+		return line.substring(1, line.length() - 1);
+	}
 	public static void main(String[] args) {
 		int a = binaryArray2int(new double[]{0.008267535946453602, 8.4959559745344E-4, 0.0010722832444512126, 9.457106847049471E-4});
 		System.out.println(a);

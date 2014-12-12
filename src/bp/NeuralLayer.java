@@ -41,10 +41,11 @@ public class NeuralLayer {
 		this.size = size;
 		this.lastSize = lastSize;
 		outputs = new double[size];
-		errors = new double[size];
 		if (this.layerIndex > 0) {// 第一层输入层没有偏置和权重
 			randomInitBias();
 			randomInitWeight();
+			errors = new double[size];// 2014年7月9日19:53:29
+										// 修改输入层没有残差
 		}
 	}
 
@@ -77,8 +78,10 @@ public class NeuralLayer {
 	public void setSize(int size) {
 		this.size = size;
 	}
+
 	/**
 	 * 设置层号
+	 * 
 	 * @param index
 	 */
 	public void setLayerIndex(int index) {
@@ -107,15 +110,7 @@ public class NeuralLayer {
 		}
 	}
 
-	// class NeuralUnit {
-	// private Double out;
-	// private Double theta;
-	//
-	// public NeuralUnit(Double out, Double theta) {
-	// this.out = out;
-	// this.theta = theta;
-	// }
-	// }
+
 	/**
 	 * 设置输出
 	 * 
