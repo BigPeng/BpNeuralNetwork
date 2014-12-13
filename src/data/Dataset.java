@@ -19,13 +19,11 @@ public class Dataset {
 
 	private double maxLable = -1;
 
-	// 是否都输出值编码
-	private boolean encodeLable;
+	
 
 	private Dataset(int classIndex) {
 
-		this.lableIndex = classIndex;
-		this.encodeLable = false;
+		this.lableIndex = classIndex;	
 		records = new ArrayList<Record>();
 	}
 
@@ -129,8 +127,7 @@ public class Dataset {
 		} catch (IOException e) {
 			e.printStackTrace();
 			return null;
-		}
-		System.out.println("导入数据:" + dataset.size());
+		}		
 		return dataset;
 	}
 

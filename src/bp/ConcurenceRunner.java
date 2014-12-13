@@ -16,19 +16,15 @@ public class ConcurenceRunner {
 	public static int cpuNum;
 	static {
 		cpuNum = Runtime.getRuntime().availableProcessors();
-		//cpuNum = 1;
-		System.out.println("cpuNum:"+cpuNum);
 		exec = Executors.newFixedThreadPool(cpuNum);
 	}
 
 	public void run(Runnable task) {
-		exec.execute(task);		
+		exec.execute(task);
 	}
 
 	public static void stop() {
 		exec.shutdown();
 	}
-	
-
 
 }

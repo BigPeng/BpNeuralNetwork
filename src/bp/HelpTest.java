@@ -153,8 +153,8 @@ public class HelpTest {
 		String testName = "data/idcard_digit.xiong.shuffle.all";
 		Dataset testset = Dataset.load(testName, ",", 1024,false);	
 		//bp.test(testset);
-		List<String> out = bp.predict(testset);
-		System.out.println(out);
+		//List<String> out = bp.predict(testset);
+	//	System.out.println(out);
 		bp.saveModel("model/model1438.model");
 		ConcurenceRunner.stop();
 	}
@@ -197,7 +197,7 @@ public class HelpTest {
 	public static void testLogFunc(){
 		String fileName = "data/func_train.txt";
 		Dataset dataset = Dataset.load(fileName, "\t", 2,false);
-		BPNetwork bp = new BPNetwork(new int[]{2,200,1},false);
+		BPNetwork bp = new BPNetwork(new int[]{2,1000,1},false);
 		bp.trainModel(dataset,1);
 		dataset= null;
 		String testName = "data/func_test.txt";

@@ -21,7 +21,7 @@ import data.Log;
 import data.Util;
 
 public class BPNetwork extends NeuralNetwork {
-	private static final double LEARN_RATE = 0.01;
+	private static final double LEARN_RATE = 0.2;
 	// 神经网络的层数,包括输入层\输出层\隐藏层
 	private int layerNum;
 	// 每一层神经网络
@@ -33,7 +33,7 @@ public class BPNetwork extends NeuralNetwork {
 
 	private static AtomicBoolean stopTrain = new AtomicBoolean(false);
 
-	private int maxLable = -1;
+	private int maxLable = 1;
 	// 模型在训练集上的类别
 	private List<String> lables;
 	// 是否对目标值进行编码,如1编码成001，2编码成010
@@ -57,19 +57,18 @@ public class BPNetwork extends NeuralNetwork {
 	 */
 	@Override
 	public void trainModel(Dataset trainSet, double threshold) {
-
 		// 初始化神经层
 		initLayer();
 		new Lisenter().start();// 开启停止监听
 		double precison = test(trainSet);
 		// double precison = 0.1;
+		int count = 1;
 		while (precison < threshold && !stopTrain.get()) {
 			train(trainSet);
 			precison = test(trainSet);
-			// break;
+			Log.i(count++ +"th: "+precison);
 		}
-		// runner.stop();
-		// 准确率
+	
 
 	}
 
@@ -91,6 +90,9 @@ public class BPNetwork extends NeuralNetwork {
 			PrintWriter out = new PrintWriter(new File(outName));
 			Iterator<Record> iter = testSet.iter();
 			int rightCount = 0;
+			int max = maxLable;
+			boolean hasLable = testSet.getLableIndex() != -1 ? true : false;
+			double sum = 0.0;
 			while (iter.hasNext()) {
 				Record record = iter.next();
 				// 设置输入层的输出值为当前记录值
@@ -98,20 +100,31 @@ public class BPNetwork extends NeuralNetwork {
 				// 更新后面各层的输出值
 				updateOutput();
 				double[] output = getLayer(layerNum - 1).getOutputs();
-				out.write(output[0] + "\n");
-				/**
-				 * int lable =
-				 * Util.binaryArray2int(output); if
-				 * (lable > max) lable = lable - (1 <<
-				 * (output.length - 1));
-				 * out.write(lable + "\n"); if
-				 * (hasLable && isSame(output, record,
-				 * false)) { rightCount++; }
-				 **/
+				if (hasLable){// 有目标值则输出
+					out.write(record.getLable() + "\t");
+					sum += Math.abs(output[0] - record.getLable());
+				}
+				if (!encodeLable)
+					out.write(output[0] + "\n");
+				else {
+
+					int lable = Util.binaryArray2int(output);
+					if (lable > max)
+						lable = lable - (1 << (output.length - 1));
+					out.write(lable + "\n");
+					if (hasLable && isSame(output, record)) {
+						rightCount++;
+					}
+
+				}
 			}
 			out.flush();
 			out.close();
-			Log.i("precision", "" + (rightCount * 1.0 / testSet.size()));
+			if(encodeLable)
+				Log.i("precision ", "" + (rightCount * 1.0 / testSet.size()));
+			else if (hasLable)
+				Log.i("error rate ", "" + (sum / testSet.size()));
+			
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -121,7 +134,7 @@ public class BPNetwork extends NeuralNetwork {
 	 * 预测数据
 	 */
 
-	public List<String> predict(Dataset testSet) {
+	private List<String> predict(Dataset testSet) {
 		try {
 			List<String> result = new ArrayList<String>();
 			int max = maxLable;
@@ -201,6 +214,7 @@ public class BPNetwork extends NeuralNetwork {
 		// Log.i("errors ",
 		// Arrays.toString(getLayer(2).getErrors()));
 		int rightCount = 0;
+		double sum = 0;
 		try {
 			Iterator<Record> iter = dataSet.iter();
 			while (iter.hasNext()) {
@@ -211,8 +225,9 @@ public class BPNetwork extends NeuralNetwork {
 				// 更新后面各层的输出值
 				updateOutput();
 				double[] output = getLayer(layerNum - 1).getOutputs();
-
-				if (isSame(output, record)) {
+				if (!encodeLable) {
+					sum += Math.abs(output[0] - record.getLable());
+				} else if (isSame(output, record)) {
 					rightCount++;
 				}
 
@@ -220,8 +235,11 @@ public class BPNetwork extends NeuralNetwork {
 		} catch (InterruptedException e) {
 			e.printStackTrace();
 		}
-		double p = rightCount * 1.0 / dataSet.size();
-		Log.i(rightCount + "", p + "");
+		double p;
+		if (!encodeLable)
+			p = 1-sum / dataSet.size();
+		else
+			p = rightCount * 1.0 / dataSet.size();	
 		return p;
 	}
 
@@ -236,7 +254,7 @@ public class BPNetwork extends NeuralNetwork {
 				break;
 			}
 			// 不编码时，直接比较与目标值的差
-			if (!encodeLable && Math.abs(output[i] - target[i]) > 0.005) {
+			if (!encodeLable && Math.abs(output[i] - target[i]) > 0.01) {
 				r = false;
 				break;
 			}
@@ -595,8 +613,6 @@ public class BPNetwork extends NeuralNetwork {
 			}
 
 			maxLable = lables.size();
-			System.out.println(lables);
-			System.out.println(maxLable);
 			reader.close();
 		} catch (IOException e) {
 			e.printStackTrace();
